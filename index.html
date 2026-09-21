@@ -2,75 +2,186 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>OpenSSL AES Decrypt Checker</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>OpenSSL AES Recovery</title>
+
 <style>
-*{box-sizing:border-box}
+*{
+    box-sizing:border-box;
+}
+
 body{
-  margin:0;
-  background:#f1f5f9;
-  font-family:Arial,sans-serif;
-  color:#0f172a
+    margin:0;
+    padding:20px;
+    background:#101318;
+    color:#f1f1f1;
+    font-family:Arial,sans-serif;
 }
+
 .container{
-  max-width:900px;
-  margin:auto;
-  padding:20px
+    max-width:900px;
+    margin:auto;
 }
+
+h1{
+    margin-top:0;
+    font-size:25px;
+}
+
 .card{
-  background:white;
-  padding:20px;
-  border-radius:14px;
-  margin-bottom:16px;
-  box-shadow:0 3px 15px #0001
+    background:#191e26;
+    border:1px solid #303743;
+    border-radius:14px;
+    padding:18px;
+    margin-bottom:16px;
 }
-h1{margin-top:0}
+
 label{
-  display:block;
-  font-weight:bold;
-  margin:12px 0 6px
+    display:block;
+    margin-top:12px;
+    margin-bottom:6px;
+    font-weight:bold;
 }
-textarea,input,select,button{
-  width:100%;
-  padding:11px;
-  border:1px solid #cbd5e1;
-  border-radius:8px;
-  font-size:15px
-}
+
+input,
+select,
+button,
 textarea{
-  min-height:180px;
-  resize:vertical;
-  font-family:monospace
+    width:100%;
+    padding:11px;
+    border-radius:8px;
+    border:1px solid #3b4350;
+    background:#0f1318;
+    color:#fff;
+    font-size:15px;
 }
+
+input[type="file"]{
+    padding:8px;
+}
+
+textarea{
+    min-height:100px;
+    resize:vertical;
+}
+
+.row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+}
+
+.buttons{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:18px;
+}
+
 button{
-  margin-top:15px;
-  background:#0f172a;
-  color:white;
-  border:0;
-  cursor:pointer
+    cursor:pointer;
+    background:#263142;
 }
-button:disabled{opacity:.5}
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:14px
+
+button:hover{
+    background:#344157;
 }
-#result{
-  white-space:pre-wrap;
-  padding:15px;
-  background:#0f172a;
-  color:#e2e8f0;
-  border-radius:8px;
-  min-height:80px
+
+button:disabled{
+    opacity:.45;
+    cursor:not-allowed;
 }
+
+.primary{
+    background:#1769aa;
+}
+
+.stop{
+    background:#8e3030;
+}
+
+progress{
+    width:100%;
+    height:25px;
+    margin-top:10px;
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+    margin-top:15px;
+}
+
+.stat{
+    background:#10141a;
+    border-radius:10px;
+    padding:12px;
+}
+
+.stat b{
+    display:block;
+    font-size:18px;
+    margin-top:4px;
+}
+
+#status{
+    padding:12px;
+    border-radius:8px;
+    background:#10141a;
+    margin-top:12px;
+    word-break:break-word;
+}
+
+#log{
+    white-space:pre-wrap;
+    font-family:monospace;
+    max-height:280px;
+    overflow:auto;
+    background:#0b0e12;
+    padding:12px;
+    border-radius:8px;
+}
+
 .success{
-  color:#22c55e
+    color:#72e09b;
 }
+
 .error{
-  color:#ef4444
+    color:#ff7373;
 }
+
+.warning{
+    color:#ffd166;
+}
+
+.small{
+    font-size:13px;
+    opacity:.75;
+    line-height:1.5;
+}
+
+.found{
+    border:1px solid #42d47c;
+    background:#102319;
+    padding:15px;
+    border-radius:10px;
+    margin-top:15px;
+}
+
 @media(max-width:650px){
-  .grid{grid-template-columns:1fr}
+    .row,
+    .buttons{
+        grid-template-columns:1fr;
+    }
+
+    .stats{
+        grid-template-columns:1fr 1fr;
+    }
+
+    body{
+        padding:10px;
+    }
 }
 </style>
 </head>
@@ -79,74 +190,270 @@ button:disabled{opacity:.5}
 
 <div class="container">
 
+<h1>🔐 OpenSSL AES Recovery</h1>
+
 <div class="card">
 
-<h1>OpenSSL AES Decrypt Checker</h1>
+<label>File terenkripsi</label>
+<input type="file" id="fileInput">
 
-<p>
-Masukkan payload Base64 OpenSSL yang dimulai dengan
-<code>U2FsdGVkX1</code>.
+<p class="small">
+File OpenSSL legacy biasanya memiliki header <b>Salted__</b>.
+Semua proses dilakukan lokal di browser.
 </p>
 
-<label>OpenSSL Base64</label>
+</div>
 
-<textarea id="payload"
-placeholder="U2FsdGVkX1..."></textarea>
 
-<label>Password</label>
+<div class="card">
 
+<h3>Mode Enkripsi</h3>
+
+<label>Cipher / Digest</label>
+<select id="configMode" onchange="changeConfigMode()">
+    <option value="auto">AUTO — 4 kombinasi</option>
+    <option value="manual">Manual</option>
+</select>
+
+<div id="manualConfig">
+
+    <div class="row">
+
+        <div>
+            <label>Cipher</label>
+            <select id="cipher">
+                <option value="AES-256-CBC">AES-256-CBC</option>
+                <option value="AES-128-CBC">AES-128-CBC</option>
+            </select>
+        </div>
+
+        <div>
+            <label>Digest</label>
+            <select id="digest">
+                <option value="SHA-256">SHA-256</option>
+                <option value="SHA-1">SHA-1</option>
+            </select>
+        </div>
+
+    </div>
+
+</div>
+
+<label>KDF</label>
+<select id="kdf" onchange="changeKDF()">
+    <option value="evp">EVP_BytesToKey — OpenSSL legacy</option>
+    <option value="pbkdf2">PBKDF2</option>
+</select>
+
+<div id="pbkdf2Options" style="display:none">
+
+    <label>PBKDF2 Iterations</label>
+    <input
+        type="number"
+        id="iterations"
+        value="10000"
+        min="1"
+    >
+
+    <p class="small">
+        Gunakan nilai yang sesuai dengan parameter saat file dibuat.
+    </p>
+
+</div>
+
+</div>
+
+
+<div class="card">
+
+<h3>Brute Force</h3>
+
+<div class="row">
+
+    <div>
+        <label>Minimum panjang</label>
+        <input
+            type="number"
+            id="minLen"
+            value="1"
+            min="1"
+            max="10"
+        >
+    </div>
+
+    <div>
+        <label>Maximum panjang</label>
+        <input
+            type="number"
+            id="maxLen"
+            value="6"
+            min="1"
+            max="10"
+        >
+    </div>
+
+</div>
+
+
+<label>Charset</label>
 <input
-  id="password"
-  type="password"
-  placeholder="Masukkan password"
+    type="text"
+    id="charset"
+    value="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 >
 
-<div class="grid">
+<div class="row">
 
-<div>
-<label>Cipher</label>
+    <div>
+        <label>Prefix</label>
+        <input type="text" id="prefix" placeholder="opsional">
+    </div>
 
-<select id="cipher">
-<option value="AES-256-CBC">
-AES-256-CBC
-</option>
-
-<option value="AES-128-CBC">
-AES-128-CBC
-</option>
-</select>
-</div>
-
-<div>
-<label>Digest</label>
-
-<select id="digest">
-<option value="SHA-256">
-SHA-256
-</option>
-
-<option value="SHA-1">
-SHA-1
-</option>
-</select>
-</div>
+    <div>
+        <label>Suffix</label>
+        <input type="text" id="suffix" placeholder="opsional">
+    </div>
 
 </div>
 
-<button onclick="decrypt()">
-DECRYPT / CHECK PASSWORD
+<p class="small">
+Brute force akan mencoba kandidat berdasarkan charset, panjang,
+prefix dan suffix.
+</p>
+
+</div>
+
+
+<div class="card">
+
+<h3>Dictionary</h3>
+
+<label>Daftar password</label>
+<textarea
+    id="dictionary"
+    placeholder="Satu password per baris&#10;password123&#10;admin123&#10;contohpassword"
+></textarea>
+
+<p class="small">
+Jika dictionary diisi, kandidat dictionary akan dicoba terlebih dahulu,
+kemudian brute force.
+</p>
+
+</div>
+
+
+<div class="card">
+
+<h3>Validasi Password</h3>
+
+<label>Known text</label>
+<input
+    type="text"
+    id="knownText"
+    placeholder="Contoh: %PDF atau teks yang pasti ada di file"
+>
+
+<p class="small">
+Jika diketahui sebagian isi plaintext, masukkan di sini agar hasil
+password dapat diverifikasi dengan lebih kuat.
+</p>
+
+</div>
+
+
+<div class="card">
+
+<div class="buttons">
+
+<button
+    class="primary"
+    id="startBtn"
+    onclick="startRecovery()"
+>
+▶ Mulai Recovery
+</button>
+
+<button
+    class="stop"
+    id="stopBtn"
+    onclick="stopRecovery()"
+    disabled
+>
+■ Stop
 </button>
 
 </div>
 
+<div id="status">
+Status: siap
+</div>
+
+<progress
+    id="progress"
+    value="0"
+    max="100"
+></progress>
+
+<div class="stats">
+
+<div class="stat">
+    Kandidat
+    <b id="attempts">0</b>
+</div>
+
+<div class="stat">
+    Crypto Test
+    <b id="cryptoAttempts">0</b>
+</div>
+
+<div class="stat">
+    Kecepatan
+    <b id="speed">0/s</b>
+</div>
+
+<div class="stat">
+    Waktu
+    <b id="elapsed">0s</b>
+</div>
+
+</div>
+
+<div
+    id="foundBox"
+    class="found"
+    style="display:none"
+>
+    <b>🎉 Password ditemukan</b>
+
+    <p>
+        Password:
+        <strong id="foundPassword"></strong>
+    </p>
+
+    <p>
+        Cipher:
+        <strong id="foundCipher"></strong>
+    </p>
+
+    <p>
+        Digest:
+        <strong id="foundDigest"></strong>
+    </p>
+
+    <p>
+        KDF:
+        <strong id="foundKDF"></strong>
+    </p>
+</div>
+
+</div>
+
 
 <div class="card">
 
-<h2>Hasil</h2>
+<h3>Log</h3>
 
-<div id="result">
-Belum ada pemeriksaan.
-</div>
+<div id="log"></div>
 
 </div>
 
@@ -155,49 +462,164 @@ Belum ada pemeriksaan.
 
 <script>
 
-function base64ToBytes(base64){
+let running = false;
+let stopped = false;
 
-    base64=base64
-        .replace(/\s/g,"");
+let attempts = 0;
+let cryptoAttempts = 0;
 
-    const binary=
-        atob(base64);
+let startTime = 0;
+let timer = null;
 
-    const bytes=
-        new Uint8Array(
-            binary.length
-        );
+let totalCandidates = 0;
 
-    for(
-        let i=0;
-        i<binary.length;
-        i++
-    ){
 
-        bytes[i]=
-            binary.charCodeAt(i);
+/* =========================
+   BASIC UTILITIES
+========================= */
+
+function log(message){
+
+    const box = document.getElementById("log");
+
+    const time = new Date().toLocaleTimeString();
+
+    box.textContent +=
+        "[" + time + "] " + message + "\n";
+
+    box.scrollTop = box.scrollHeight;
+}
+
+
+function setStatus(message){
+
+    document.getElementById("status").textContent =
+        "Status: " + message;
+}
+
+
+function formatNumber(n){
+
+    return Number(n).toLocaleString("id-ID");
+
+}
+
+
+function updateStats(){
+
+    document.getElementById("attempts").textContent =
+        formatNumber(attempts);
+
+    document.getElementById("cryptoAttempts").textContent =
+        formatNumber(cryptoAttempts);
+
+    const elapsed =
+        (performance.now() - startTime) / 1000;
+
+    document.getElementById("elapsed").textContent =
+        elapsed.toFixed(1) + "s";
+
+    if(elapsed > 0){
+
+        const speed =
+            cryptoAttempts / elapsed;
+
+        document.getElementById("speed").textContent =
+            speed.toFixed(1) + "/s";
 
     }
 
-    return bytes;
+    if(totalCandidates > 0){
+
+        const percent =
+            (attempts / totalCandidates) * 100;
+
+        document.getElementById("progress").value =
+            Math.min(100, percent);
+
+    }
 
 }
 
 
-function stringBytes(text){
+/* =========================
+   CONFIGURATION
+========================= */
 
-    return new TextEncoder()
-        .encode(text);
+function changeConfigMode(){
+
+    const mode =
+        document.getElementById("configMode").value;
+
+    document.getElementById("manualConfig").style.display =
+        mode === "manual" ? "block" : "none";
 
 }
 
 
-function concat(a,b){
+function changeKDF(){
 
-    const result=
-        new Uint8Array(
-            a.length+b.length
-        );
+    const kdf =
+        document.getElementById("kdf").value;
+
+    document.getElementById("pbkdf2Options").style.display =
+        kdf === "pbkdf2" ? "block" : "none";
+
+}
+
+
+function getConfigurations(){
+
+    const mode =
+        document.getElementById("configMode").value;
+
+    if(mode === "manual"){
+
+        return [{
+            cipher:
+                document.getElementById("cipher").value,
+
+            digest:
+                document.getElementById("digest").value
+        }];
+
+    }
+
+    return [
+
+        {
+            cipher:"AES-256-CBC",
+            digest:"SHA-256"
+        },
+
+        {
+            cipher:"AES-256-CBC",
+            digest:"SHA-1"
+        },
+
+        {
+            cipher:"AES-128-CBC",
+            digest:"SHA-256"
+        },
+
+        {
+            cipher:"AES-128-CBC",
+            digest:"SHA-1"
+        }
+
+    ];
+
+}
+
+
+/* =========================
+   BYTE UTILITIES
+========================= */
+
+function concatBytes(a,b){
+
+    const result =
+        new Uint8Array(a.length + b.length);
 
     result.set(a,0);
     result.set(b,a.length);
@@ -207,53 +629,144 @@ function concat(a,b){
 }
 
 
-/*
-=================================
-OpenSSL EVP_BytesToKey
-=================================
-*/
+function stringBytes(str){
 
-async function evpBytesToKey(
+    return new TextEncoder().encode(str);
+
+}
+
+
+function equalBytes(a,b){
+
+    if(a.length !== b.length)
+        return false;
+
+    for(let i=0;i<a.length;i++){
+
+        if(a[i] !== b[i])
+            return false;
+
+    }
+
+    return true;
+
+}
+
+
+/* =========================
+   OPENSSL Salted__
+========================= */
+
+function parseOpenSSL(data){
+
+    if(data.length < 16){
+
+        throw new Error(
+            "File terlalu pendek untuk format OpenSSL Salted__."
+        );
+
+    }
+
+    const magic =
+        new TextDecoder("ascii").decode(
+            data.slice(0,8)
+        );
+
+    if(magic !== "Salted__"){
+
+        throw new Error(
+            'Header "Salted__" tidak ditemukan.'
+        );
+
+    }
+
+    return {
+
+        salt:data.slice(8,16),
+
+        ciphertext:data.slice(16)
+
+    };
+
+}
+
+
+/* =========================
+   HASH
+========================= */
+
+async function hashData(
+    algorithm,
+    data
+){
+
+    return new Uint8Array(
+        await crypto.subtle.digest(
+            algorithm,
+            data
+        )
+    );
+
+}
+
+
+/* =========================
+   EVP_BytesToKey
+========================= */
+
+async function EVP_BytesToKey(
     password,
     salt,
     keyLength,
     ivLength,
-    digest
+    digestName
 ){
 
-    const passwordBytes=
+    const passwordBytes =
         stringBytes(password);
 
-    let previous=
+    let result =
         new Uint8Array(0);
 
-    let result=
+    let previous =
         new Uint8Array(0);
 
-    while(
-        result.length<
-        keyLength+ivLength
-    ){
+    const total =
+        keyLength + ivLength;
 
-        const input=
-            concat(
-                previous,
-                concat(
+    while(result.length < total){
+
+        let input;
+
+        if(previous.length === 0){
+
+            input =
+                concatBytes(
                     passwordBytes,
                     salt
-                )
+                );
+
+        }else{
+
+            input =
+                concatBytes(
+                    previous,
+                    concatBytes(
+                        passwordBytes,
+                        salt
+                    )
+                );
+
+        }
+
+        previous =
+            await hashData(
+                digestName,
+                input
             );
 
-        previous=
-            new Uint8Array(
-                await crypto.subtle.digest(
-                    digest,
-                    input
-                )
-            );
-
-        result=
-            concat(
+        result =
+            concatBytes(
                 result,
                 previous
             );
@@ -262,286 +775,1083 @@ async function evpBytesToKey(
 
     return {
 
-        key:
-            result.slice(
-                0,
-                keyLength
-            ),
+        key:result.slice(
+            0,
+            keyLength
+        ),
 
-        iv:
-            result.slice(
-                keyLength,
-                keyLength+ivLength
-            )
+        iv:result.slice(
+            keyLength,
+            total
+        )
 
     };
 
 }
 
 
-/*
-=================================
-DECRYPT
-=================================
-*/
+/* =========================
+   PBKDF2
+========================= */
 
-async function decrypt(){
+async function PBKDF2Derive(
+    password,
+    salt,
+    keyLength,
+    ivLength,
+    digestName,
+    iterations
+){
 
-    const result=
-        document.getElementById(
-            "result"
+    const passwordKey =
+        await crypto.subtle.importKey(
+            "raw",
+            stringBytes(password),
+            {
+                name:"PBKDF2"
+            },
+            false,
+            ["deriveBits"]
         );
 
-    result.className="";
-    result.textContent=
-        "Memproses...";
+    const bits =
+        await crypto.subtle.deriveBits(
+            {
+                name:"PBKDF2",
+
+                salt:salt,
+
+                iterations:iterations,
+
+                hash:digestName
+            },
+
+            passwordKey,
+
+            (keyLength + ivLength) * 8
+        );
+
+    const result =
+        new Uint8Array(bits);
+
+    return {
+
+        key:result.slice(
+            0,
+            keyLength
+        ),
+
+        iv:result.slice(
+            keyLength,
+            keyLength + ivLength
+        )
+
+    };
+
+}
 
 
-    try{
+/* =========================
+   AES DECRYPT
+========================= */
 
-        const base64=
-            document.getElementById(
-                "payload"
-            ).value
-            .replace(/\s/g,"");
+async function decryptAES(
+    ciphertext,
+    keyBytes,
+    ivBytes
+){
 
-        const password=
-            document.getElementById(
-                "password"
-            ).value;
+    const key =
+        await crypto.subtle.importKey(
+            "raw",
+            keyBytes,
+            {
+                name:"AES-CBC"
+            },
+            false,
+            ["decrypt"]
+        );
 
-        const cipher=
-            document.getElementById(
-                "cipher"
-            ).value;
+    return new Uint8Array(
 
-        const digest=
-            document.getElementById(
-                "digest"
-            ).value;
+        await crypto.subtle.decrypt(
+            {
+                name:"AES-CBC",
+                iv:ivBytes
+            },
+
+            key,
+
+            ciphertext
+        )
+
+    );
+
+}
 
 
-        if(!base64){
+/* =========================
+   PLAINTEXT VALIDATION
+========================= */
 
-            throw new Error(
-                "Payload Base64 kosong."
-            );
+function printableScore(bytes){
+
+    if(bytes.length === 0)
+        return 0;
+
+    const sample =
+        bytes.slice(
+            0,
+            Math.min(bytes.length,512)
+        );
+
+    let good = 0;
+
+    for(const b of sample){
+
+        if(
+            b === 9 ||
+            b === 10 ||
+            b === 13 ||
+            (b >= 32 && b <= 126)
+        ){
+
+            good++;
 
         }
 
+    }
 
-        if(!password){
+    return good / sample.length;
 
-            throw new Error(
-                "Password kosong."
-            );
-
-        }
+}
 
 
-        /*
-        Decode Base64
-        */
+function containsKnownText(
+    plaintext,
+    knownText
+){
 
-        const data=
-            base64ToBytes(
-                base64
-            );
+    if(!knownText)
+        return true;
 
+    const known =
+        stringBytes(knownText);
 
-        /*
-        OpenSSL salted header
-        */
+    if(known.length > plaintext.length)
+        return false;
 
-        const header=
-            stringBytes(
-                "Salted__"
-            );
+    for(
+        let i=0;
+        i<=plaintext.length-known.length;
+        i++
+    ){
 
-
-        if(data.length<16){
-
-            throw new Error(
-                "Payload terlalu pendek."
-            );
-
-        }
-
+        let match = true;
 
         for(
-            let i=0;
-            i<8;
-            i++
+            let j=0;
+            j<known.length;
+            j++
         ){
 
             if(
-                data[i]!==header[i]
+                plaintext[i+j] !== known[j]
             ){
 
-                throw new Error(
-                    "Header Salted__ tidak ditemukan."
+                match = false;
+                break;
+
+            }
+
+        }
+
+        if(match)
+            return true;
+
+    }
+
+    return false;
+
+}
+
+
+function validatePlaintext(
+    plaintext,
+    knownText
+){
+
+    if(!plaintext || plaintext.length === 0)
+        return false;
+
+    if(!containsKnownText(
+        plaintext,
+        knownText
+    ))
+        return false;
+
+    /*
+       Jika known text diberikan,
+       itu menjadi validasi utama.
+    */
+
+    if(knownText)
+        return true;
+
+    /*
+       Tanpa known text gunakan
+       heuristic untuk plaintext teks.
+    */
+
+    return printableScore(plaintext) >= 0.80;
+
+}
+
+
+/* =========================
+   DECRYPT ONE CANDIDATE
+========================= */
+
+async function decryptCandidate(
+    parsed,
+    password,
+    config
+){
+
+    const cipher =
+        config.cipher;
+
+    const digest =
+        config.digest;
+
+    let keyLength;
+
+    if(cipher === "AES-256-CBC")
+        keyLength = 32;
+    else
+        keyLength = 16;
+
+    const ivLength = 16;
+
+    const kdf =
+        document.getElementById("kdf").value;
+
+    let derived;
+
+    if(kdf === "evp"){
+
+        derived =
+            await EVP_BytesToKey(
+                password,
+                parsed.salt,
+                keyLength,
+                ivLength,
+                digest
+            );
+
+    }else{
+
+        const iterations =
+            parseInt(
+                document.getElementById("iterations").value,
+                10
+            );
+
+        if(
+            !Number.isFinite(iterations) ||
+            iterations < 1
+        ){
+
+            throw new Error(
+                "Jumlah PBKDF2 iterations tidak valid."
+            );
+
+        }
+
+        derived =
+            await PBKDF2Derive(
+                password,
+                parsed.salt,
+                keyLength,
+                ivLength,
+                digest,
+                iterations
+            );
+
+    }
+
+    try{
+
+        const plaintext =
+            await decryptAES(
+                parsed.ciphertext,
+                derived.key,
+                derived.iv
+            );
+
+        const knownText =
+            document.getElementById(
+                "knownText"
+            ).value;
+
+        if(
+            validatePlaintext(
+                plaintext,
+                knownText
+            )
+        ){
+
+            return {
+                found:true,
+                plaintext:plaintext
+            };
+
+        }
+
+    }catch(e){
+
+        /*
+           Bad decrypt / invalid padding
+           berarti kandidat ini tidak valid.
+        */
+
+    }
+
+    return {
+        found:false
+    };
+
+}
+
+
+/* =========================
+   PASSWORD GENERATOR
+========================= */
+
+function* generatePasswords(){
+
+    const charset =
+        document.getElementById(
+            "charset"
+        ).value;
+
+    const minLen =
+        parseInt(
+            document.getElementById(
+                "minLen"
+            ).value,
+            10
+        );
+
+    const maxLen =
+        parseInt(
+            document.getElementById(
+                "maxLen"
+            ).value,
+            10
+        );
+
+    const prefix =
+        document.getElementById(
+            "prefix"
+        ).value;
+
+    const suffix =
+        document.getElementById(
+            "suffix"
+        ).value;
+
+    if(!charset){
+
+        throw new Error(
+            "Charset tidak boleh kosong."
+        );
+
+    }
+
+    function* build(
+        current,
+        targetLength
+    ){
+
+        if(current.length === targetLength){
+
+            yield prefix +
+                current +
+                suffix;
+
+            return;
+
+        }
+
+        for(
+            let i=0;
+            i<charset.length;
+            i++
+        ){
+
+            yield* build(
+                current + charset[i],
+                targetLength
+            );
+
+        }
+
+    }
+
+    for(
+        let len=minLen;
+        len<=maxLen;
+        len++
+    ){
+
+        yield* build(
+            "",
+            len
+        );
+
+    }
+
+}
+
+
+/* =========================
+   TOTAL CANDIDATES
+========================= */
+
+function calculateTotalCandidates(){
+
+    const charset =
+        document.getElementById(
+            "charset"
+        ).value;
+
+    const minLen =
+        parseInt(
+            document.getElementById(
+                "minLen"
+            ).value,
+            10
+        );
+
+    const maxLen =
+        parseInt(
+            document.getElementById(
+                "maxLen"
+            ).value,
+            10
+        );
+
+    if(!charset)
+        return 0;
+
+    let total = 0;
+
+    for(
+        let len=minLen;
+        len<=maxLen;
+        len++
+    ){
+
+        total +=
+            Math.pow(
+                charset.length,
+                len
+            );
+
+    }
+
+    return total;
+
+}
+
+
+/* =========================
+   DICTIONARY
+========================= */
+
+function getDictionary(){
+
+    const text =
+        document.getElementById(
+            "dictionary"
+        ).value;
+
+    return text
+        .split(/\r?\n/)
+        .map(x => x.trim())
+        .filter(x => x.length > 0);
+
+}
+
+
+/* =========================
+   UI RESET
+========================= */
+
+function resetUI(){
+
+    document.getElementById(
+        "progress"
+    ).value = 0;
+
+    document.getElementById(
+        "foundBox"
+    ).style.display = "none";
+
+    document.getElementById(
+        "foundPassword"
+    ).textContent = "";
+
+    document.getElementById(
+        "foundCipher"
+    ).textContent = "";
+
+    document.getElementById(
+        "foundDigest"
+    ).textContent = "";
+
+    document.getElementById(
+        "foundKDF"
+    ).textContent = "";
+
+    document.getElementById(
+        "log"
+    ).textContent = "";
+
+}
+
+
+/* =========================
+   START
+========================= */
+
+async function startRecovery(){
+
+    if(running)
+        return;
+
+    const file =
+        document.getElementById(
+            "fileInput"
+        ).files[0];
+
+    if(!file){
+
+        alert(
+            "Pilih file terenkripsi terlebih dahulu."
+        );
+
+        return;
+
+    }
+
+    const minLen =
+        parseInt(
+            document.getElementById(
+                "minLen"
+            ).value,
+            10
+        );
+
+    const maxLen =
+        parseInt(
+            document.getElementById(
+                "maxLen"
+            ).value,
+            10
+        );
+
+    if(
+        !Number.isInteger(minLen) ||
+        !Number.isInteger(maxLen) ||
+        minLen < 1 ||
+        maxLen < minLen ||
+        maxLen > 10
+    ){
+
+        alert(
+            "Panjang password tidak valid."
+        );
+
+        return;
+
+    }
+
+    resetUI();
+
+    running = true;
+    stopped = false;
+
+    attempts = 0;
+    cryptoAttempts = 0;
+
+    startTime =
+        performance.now();
+
+    document.getElementById(
+        "startBtn"
+    ).disabled = true;
+
+    document.getElementById(
+        "stopBtn"
+    ).disabled = false;
+
+    timer =
+        setInterval(
+            updateStats,
+            200
+        );
+
+    try{
+
+        setStatus(
+            "membaca file..."
+        );
+
+        log(
+            "File: " +
+            file.name
+        );
+
+        const data =
+            new Uint8Array(
+                await file.arrayBuffer()
+            );
+
+        const parsed =
+            parseOpenSSL(data);
+
+        log(
+            "Header Salted__ ditemukan."
+        );
+
+        log(
+            "Salt: " +
+            bytesToHex(parsed.salt)
+        );
+
+        log(
+            "Ciphertext: " +
+            parsed.ciphertext.length +
+            " bytes"
+        );
+
+        const configs =
+            getConfigurations();
+
+        const kdf =
+            document.getElementById(
+                "kdf"
+            ).value;
+
+        log(
+            "KDF: " +
+            (
+                kdf === "evp"
+                ? "EVP_BytesToKey"
+                : "PBKDF2"
+            )
+        );
+
+        if(
+            document.getElementById(
+                "configMode"
+            ).value === "auto"
+        ){
+
+            log(
+                "AUTO: 4 kombinasi cipher/digest."
+            );
+
+        }else{
+
+            log(
+                "Manual: " +
+                configs[0].cipher +
+                " + " +
+                configs[0].digest
+            );
+
+        }
+
+        totalCandidates =
+            calculateTotalCandidates();
+
+        const dictionary =
+            getDictionary();
+
+        const dictionaryCount =
+            dictionary.length;
+
+        const estimatedTotal =
+            totalCandidates +
+            dictionaryCount;
+
+        if(estimatedTotal > 0){
+
+            totalCandidates =
+                estimatedTotal;
+
+        }
+
+        log(
+            "Dictionary: " +
+            dictionaryCount +
+            " kandidat."
+        );
+
+        log(
+            "Brute force: " +
+            formatNumber(
+                calculateTotalCandidates()
+            ) +
+            " kandidat."
+        );
+
+        setStatus(
+            "recovery berjalan..."
+        );
+
+
+        /* =========================
+           TRY DICTIONARY FIRST
+        ========================= */
+
+        for(
+            const password of dictionary
+        ){
+
+            if(stopped)
+                break;
+
+            attempts++;
+
+            let found =
+                await testPassword(
+                    parsed,
+                    password,
+                    configs
                 );
+
+            if(found){
+
+                finishFound(found);
+
+                return;
+
+            }
+
+            updateStats();
+
+            /*
+               Beri browser kesempatan
+               memperbarui tampilan.
+            */
+
+            await yieldBrowser();
+
+        }
+
+
+        /* =========================
+           BRUTE FORCE
+        ========================= */
+
+        if(!stopped){
+
+            const generator =
+                generatePasswords();
+
+            for(
+                const password of generator
+            ){
+
+                if(stopped)
+                    break;
+
+                attempts++;
+
+                const found =
+                    await testPassword(
+                        parsed,
+                        password,
+                        configs
+                    );
+
+                if(found){
+
+                    finishFound(found);
+
+                    return;
+
+                }
+
+                updateStats();
+
+                await yieldBrowser();
 
             }
 
         }
 
 
-        /*
-        Salt = byte 8 sampai 15
-        */
+        if(stopped){
 
-        const salt=
-            data.slice(
-                8,
-                16
+            setStatus(
+                "dihentikan."
             );
 
-
-        /*
-        Ciphertext dimulai
-        dari byte 16
-        */
-
-        const ciphertext=
-            data.slice(
-                16
+            log(
+                "Recovery dihentikan pengguna."
             );
 
+        }else{
 
-        /*
-        AES key length
-        */
-
-        const keyLength=
-            cipher==="AES-128-CBC"
-            ?16
-            :32;
-
-
-        /*
-        Derive key + IV
-        */
-
-        const derived=
-            await evpBytesToKey(
-                password,
-                salt,
-                keyLength,
-                16,
-                digest
+            setStatus(
+                "selesai — password tidak ditemukan."
             );
 
-
-        /*
-        Import AES key
-        */
-
-        const key=
-            await crypto.subtle.importKey(
-                "raw",
-                derived.key,
-                {
-                    name:"AES-CBC"
-                },
-                false,
-                ["decrypt"]
+            log(
+                "Semua kandidat telah dicoba."
             );
-
-
-        /*
-        Decrypt
-        */
-
-        const plaintext=
-            new Uint8Array(
-                await crypto.subtle.decrypt(
-                    {
-                        name:"AES-CBC",
-                        iv:derived.iv
-                    },
-                    key,
-                    ciphertext
-                )
-            );
-
-
-        /*
-        Decode plaintext
-        */
-
-        let text;
-
-        try{
-
-            text=
-                new TextDecoder(
-                    "utf-8",
-                    {
-                        fatal:true
-                    }
-                ).decode(
-                    plaintext
-                );
-
-        }
-        catch{
-
-            text=
-                "[Binary data]\n\n"+
-                bytesToHex(
-                    plaintext
-                );
 
         }
 
+    }catch(error){
 
-        result.className="success";
+        console.error(error);
 
-        result.textContent=
-            "PASSWORD BENAR / DECRYPT BERHASIL\n\n"+
-            "Salt:\n"+
-            bytesToHex(salt)+
-            "\n\n"+
-            "Plaintext:\n"+
-            text;
+        setStatus(
+            "error: " +
+            error.message
+        );
 
+        log(
+            "ERROR: " +
+            error.message
+        );
 
-    }
-    catch(error){
+    }finally{
 
-        result.className="error";
+        running = false;
 
-        result.textContent=
-            "GAGAL DECRYPT\n\n"+
-            error.message+
-            "\n\n"+
-            "Kemungkinan password atau parameter "+
-            "cipher/digest tidak cocok.";
+        clearInterval(timer);
+
+        updateStats();
+
+        document.getElementById(
+            "startBtn"
+        ).disabled = false;
+
+        document.getElementById(
+            "stopBtn"
+        ).disabled = true;
 
     }
 
 }
 
 
-/*
-=================================
-HEX
-=================================
-*/
+/* =========================
+   TEST PASSWORD
+========================= */
+
+async function testPassword(
+    parsed,
+    password,
+    configs
+){
+
+    for(
+        const config of configs
+    ){
+
+        if(stopped)
+            return null;
+
+        cryptoAttempts++;
+
+        try{
+
+            const result =
+                await decryptCandidate(
+                    parsed,
+                    password,
+                    config
+                );
+
+            if(result.found){
+
+                return {
+
+                    password:password,
+
+                    cipher:
+                        config.cipher,
+
+                    digest:
+                        config.digest,
+
+                    kdf:
+                        document.getElementById(
+                            "kdf"
+                        ).value,
+
+                    plaintext:
+                        result.plaintext
+
+                };
+
+            }
+
+        }catch(error){
+
+            /*
+               Kesalahan kandidat tidak menghentikan
+               seluruh recovery.
+            */
+
+        }
+
+    }
+
+    return null;
+
+}
+
+
+/* =========================
+   FOUND
+========================= */
+
+function finishFound(result){
+
+    stopped = false;
+
+    document.getElementById(
+        "foundBox"
+    ).style.display = "block";
+
+    document.getElementById(
+        "foundPassword"
+    ).textContent =
+        result.password;
+
+    document.getElementById(
+        "foundCipher"
+    ).textContent =
+        result.cipher;
+
+    document.getElementById(
+        "foundDigest"
+    ).textContent =
+        result.digest;
+
+    document.getElementById(
+        "foundKDF"
+    ).textContent =
+        result.kdf === "evp"
+        ? "EVP_BytesToKey"
+        : "PBKDF2";
+
+    setStatus(
+        "PASSWORD DITEMUKAN"
+    );
+
+    log(
+        "PASSWORD DITEMUKAN: " +
+        result.password
+    );
+
+    log(
+        "Cipher: " +
+        result.cipher
+    );
+
+    log(
+        "Digest: " +
+        result.digest
+    );
+
+    log(
+        "KDF: " +
+        (
+            result.kdf === "evp"
+            ? "EVP_BytesToKey"
+            : "PBKDF2"
+        )
+    );
+
+    document.getElementById(
+        "progress"
+    ).value = 100;
+
+}
+
+
+/* =========================
+   STOP
+========================= */
+
+function stopRecovery(){
+
+    if(!running)
+        return;
+
+    stopped = true;
+
+    setStatus(
+        "menghentikan..."
+    );
+
+    log(
+        "Permintaan Stop diterima."
+    );
+
+}
+
+
+/* =========================
+   BROWSER YIELD
+========================= */
+
+function yieldBrowser(){
+
+    return new Promise(
+        resolve =>
+            setTimeout(
+                resolve,
+                0
+            )
+    );
+
+}
+
+
+/* =========================
+   HEX
+========================= */
 
 function bytesToHex(bytes){
 
-    return Array
-        .from(bytes)
+    return Array.from(bytes)
         .map(
-            b=>
+            b =>
                 b.toString(16)
-                 .padStart(2,"0")
+                .padStart(2,"0")
         )
         .join("");
 
 }
+
+
+/* =========================
+   INITIAL STATE
+========================= */
+
+changeConfigMode();
+changeKDF();
 
 </script>
 
