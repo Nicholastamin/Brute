@@ -2,108 +2,200 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>OpenSSL Ciphertext Analyzer</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>OpenSSL Configuration Analyzer</title>
 
 <style>
-*{box-sizing:border-box}
+*{
+    box-sizing:border-box;
+}
 
 body{
     margin:0;
     font-family:Arial,sans-serif;
-    background:#0b1020;
-    color:#eef2ff;
+    background:#0f1115;
+    color:#f2f4f7;
 }
 
 .container{
-    max-width:850px;
-    margin:auto;
-    padding:18px;
+    width:min(1000px,94%);
+    margin:25px auto 50px;
+}
+
+h1{
+    margin-bottom:8px;
+}
+
+.subtitle{
+    color:#9ca3af;
+    margin-bottom:22px;
 }
 
 .card{
-    background:#151c31;
-    border:1px solid #2b3755;
-    border-radius:16px;
-    padding:18px;
-    margin-bottom:16px;
+    background:#191c22;
+    border:1px solid #2c313a;
+    border-radius:14px;
+    padding:20px;
+    margin-bottom:18px;
 }
-
-h1{margin-top:0}
 
 label{
     display:block;
-    margin:12px 0 6px;
-    color:#aeb9d8;
+    font-weight:bold;
+    margin-bottom:8px;
 }
 
-input,textarea,button{
+input[type=file],
+textarea{
     width:100%;
-    border:1px solid #34415f;
-    border-radius:9px;
-    background:#0d1425;
-    color:white;
-    padding:11px;
-    font-size:14px;
+    background:#0c0f13;
+    color:#eee;
+    border:1px solid #353b46;
+    border-radius:10px;
+    padding:12px;
 }
 
 textarea{
     min-height:180px;
     resize:vertical;
     font-family:monospace;
+    font-size:13px;
 }
 
 button{
+    width:100%;
+    margin-top:14px;
+    padding:14px;
+    border:0;
+    border-radius:10px;
+    background:#4f7cff;
+    color:white;
+    font-weight:bold;
+    font-size:15px;
     cursor:pointer;
-    background:#315da8;
-    margin-top:10px;
 }
 
 button:hover{
-    background:#3d6fc4;
+    opacity:.9;
+}
+
+.status{
+    padding:15px;
+    border-radius:10px;
+    border:1px solid #353b46;
+    background:#10141a;
+    margin-bottom:18px;
+}
+
+.success{
+    border-color:#33885a;
+}
+
+.warning{
+    border-color:#a67c25;
+}
+
+.error{
+    border-color:#a84444;
 }
 
 .grid{
     display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:10px;
-}
-
-@media(max-width:650px){
-    .grid{grid-template-columns:1fr}
+    grid-template-columns:
+        repeat(auto-fit,minmax(220px,1fr));
+    gap:12px;
 }
 
 .item{
-    background:#0d1425;
-    border:1px solid #293452;
+    background:#10141a;
+    border:1px solid #2d333d;
     border-radius:10px;
-    padding:12px;
+    padding:13px;
 }
 
-.item span{
-    display:block;
-    color:#91a0c2;
+.title{
+    color:#929aa7;
     font-size:12px;
-    margin-bottom:5px;
+    margin-bottom:6px;
 }
 
-.item b{
+.value{
+    font-family:monospace;
     word-break:break-all;
 }
 
-.good{color:#62e394}
-.warn{color:#ffd166}
-.bad{color:#ff7777}
+.table-wrap{
+    width:100%;
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:760px;
+}
+
+th,
+td{
+    padding:11px;
+    border-bottom:1px solid #303641;
+    text-align:left;
+    vertical-align:top;
+}
+
+th{
+    background:#11151b;
+    font-size:13px;
+}
+
+td{
+    font-size:13px;
+}
+
+.badge{
+    display:inline-block;
+    padding:5px 8px;
+    border-radius:6px;
+    background:#252b35;
+    font-family:monospace;
+    font-size:12px;
+}
+
+.yes{
+    border:1px solid #328457;
+}
+
+.unknown{
+    border:1px solid #806725;
+}
 
 pre{
-    white-space:pre-wrap;
-    word-break:break-word;
-    background:#080d19;
+    background:#0c0f13;
+    border:1px solid #2c323c;
     border-radius:10px;
-    padding:12px;
-    max-height:350px;
+    padding:14px;
+    white-space:pre-wrap;
+    word-break:break-all;
     overflow:auto;
+    font-family:monospace;
     font-size:12px;
+    line-height:1.6;
+}
+
+.note{
+    color:#aeb5c0;
+    font-size:13px;
+    line-height:1.6;
+}
+
+.big{
+    font-size:18px;
+    font-weight:bold;
+    margin-bottom:7px;
+}
+
+.hidden{
+    display:none;
 }
 </style>
 </head>
@@ -112,245 +204,427 @@ pre{
 
 <div class="container">
 
-<div class="card">
-<h1>🔎 OpenSSL Ciphertext Analyzer</h1>
-<p>
-Analisis format ciphertext secara lokal di browser.
-Tidak ada data yang dikirim ke server.
-</p>
+<h1>OpenSSL Configuration Analyzer</h1>
+
+<div class="subtitle">
+Pemeriksaan otomatis struktur OpenSSL Salted__
+dan seluruh kemungkinan konfigurasi umum
 </div>
 
+
 <div class="card">
 
-<h2>Input File</h2>
+<label>Pilih file ciphertext</label>
 
 <input
     type="file"
     id="fileInput"
-    accept=".txt,.enc,.bin,.dat"
 >
 
-<label>Atau paste ciphertext Base64</label>
+
+<br><br>
+
+
+<label>
+Atau tempel Base64 OpenSSL
+</label>
 
 <textarea
-    id="cipherInput"
+    id="base64Input"
     placeholder="U2FsdGVkX1..."
 ></textarea>
 
+
 <button onclick="analyze()">
-🔍 Analisis Ciphertext
+ANALISIS SEMUA KONFIGURASI
 </button>
 
 </div>
 
+
+<div
+    id="result"
+    class="hidden"
+>
+
+
+<div
+    id="status"
+    class="status"
+></div>
+
+
+<!-- INFORMASI DASAR -->
+
 <div class="card">
 
-<h2>Hasil</h2>
-
-<div id="status" class="warn">
-Belum dianalisis.
-</div>
-
-<br>
+<h2>Informasi Dasar</h2>
 
 <div class="grid">
 
 <div class="item">
-<span>Format</span>
-<b id="format">-</b>
+<div class="title">Format</div>
+<div
+    class="value"
+    id="format"
+></div>
 </div>
+
 
 <div class="item">
-<span>OpenSSL Header</span>
-<b id="header">-</b>
+<div class="title">Header</div>
+<div
+    class="value"
+    id="header"
+></div>
 </div>
+
 
 <div class="item">
-<span>Salt</span>
-<b id="salt">-</b>
+<div class="title">Salt</div>
+<div
+    class="value"
+    id="salt"
+></div>
 </div>
+
 
 <div class="item">
-<span>Salt Size</span>
-<b id="saltSize">-</b>
+<div class="title">Total data</div>
+<div
+    class="value"
+    id="total"
+></div>
 </div>
+
 
 <div class="item">
-<span>Total Binary</span>
-<b id="totalSize">-</b>
+<div class="title">Ciphertext</div>
+<div
+    class="value"
+    id="ciphertext"
+></div>
 </div>
+
 
 <div class="item">
-<span>Ciphertext</span>
-<b id="cipherSize">-</b>
+<div class="title">Blok 16 byte</div>
+<div
+    class="value"
+    id="blocks"
+></div>
 </div>
+
 
 <div class="item">
-<span>Base64 Size</span>
-<b id="base64Size">-</b>
-</div>
-
-<div class="item">
-<span>Padding</span>
-<b id="padding">-</b>
+<div class="title">Sisa pembagian 16</div>
+<div
+    class="value"
+    id="remainder"
+></div>
 </div>
 
 </div>
 
 </div>
+
+
+<!-- AES -->
 
 <div class="card">
 
-<h2>Informasi yang Bisa/Tidak Bisa Diketahui</h2>
+<h2>1. Pemeriksaan AES</h2>
 
-<pre id="details"></pre>
+<div id="aesSummary"></div>
+
+<br>
+
+<div class="table-wrap">
+
+<table>
+
+<thead>
+<tr>
+<th>Cipher</th>
+<th>Key</th>
+<th>Block Size</th>
+<th>Struktur</th>
+<th>Status</th>
+</tr>
+</thead>
+
+<tbody id="aesTable"></tbody>
+
+</table>
 
 </div>
 
+</div>
+
+
+<!-- KDF -->
+
 <div class="card">
 
-<h2>Hex Preview</h2>
+<h2>2. Kemungkinan KDF</h2>
+
+<div class="table-wrap">
+
+<table>
+
+<thead>
+<tr>
+<th>KDF</th>
+<th>Salt</th>
+<th>Key Derivation</th>
+<th>Dapat dipastikan?</th>
+</tr>
+</thead>
+
+<tbody id="kdfTable"></tbody>
+
+</table>
+
+</div>
+
+<p class="note">
+Format <code>Salted__</code> menyimpan salt, tetapi tidak
+menyimpan nama KDF yang digunakan.
+</p>
+
+</div>
+
+
+<!-- DIGEST -->
+
+<div class="card">
+
+<h2>3. Kemungkinan Digest</h2>
+
+<div class="table-wrap">
+
+<table>
+
+<thead>
+<tr>
+<th>Digest</th>
+<th>Kemungkinan digunakan</th>
+<th>Dapat dibedakan dari header?</th>
+</tr>
+</thead>
+
+<tbody id="digestTable"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+
+<!-- SEMUA KOMBINASI -->
+
+<div class="card">
+
+<h2>4. Semua Kombinasi</h2>
+
+<div class="table-wrap">
+
+<table>
+
+<thead>
+<tr>
+<th>No.</th>
+<th>Cipher</th>
+<th>KDF</th>
+<th>Digest</th>
+<th>Key</th>
+<th>IV</th>
+<th>Status struktur</th>
+</tr>
+</thead>
+
+<tbody id="combinationTable"></tbody>
+
+</table>
+
+</div>
+
+<p class="note">
+Daftar ini menunjukkan konfigurasi yang secara struktur
+dapat digunakan. Ini bukan bukti bahwa salah satu konfigurasi
+adalah konfigurasi asli.
+</p>
+
+</div>
+
+
+<!-- KESIMPULAN -->
+
+<div class="card">
+
+<h2>5. Kesimpulan</h2>
+
+<div id="conclusion"></div>
+
+</div>
+
+
+<!-- HEX -->
+
+<div class="card">
+
+<h2>6. Hex Preview</h2>
 
 <pre id="hex"></pre>
 
 </div>
 
+
+<!-- CATATAN -->
+
 <div class="card">
 
-<h2>Log</h2>
+<h2>7. Penjelasan</h2>
 
-<pre id="log"></pre>
+<div class="note">
+
+<p>
+<strong>Salted__</strong> adalah header format salted
+yang digunakan oleh OpenSSL.
+</p>
+
+<p>
+Salt pada file ini berukuran 8 byte.
+</p>
+
+<p>
+AES-128 dan AES-256 sama-sama menggunakan
+block size 16 byte.
+</p>
+
+<p>
+Karena itu ciphertext 1424 byte:
+</p>
+
+<pre>1424 ÷ 16 = 89 blok</pre>
+
+<p>
+sehingga struktur tersebut konsisten dengan AES-CBC,
+tetapi tidak bisa menentukan apakah key yang digunakan
+128-bit atau 256-bit.
+</p>
+
+<p>
+Demikian juga, header <code>Salted__</code> tidak menyimpan
+informasi apakah pembentukan key menggunakan
+EVP_BytesToKey atau PBKDF2.
+</p>
+
+<p>
+Digest seperti SHA-1 dan SHA-256 juga tidak dapat
+dibedakan hanya dari header.
+</p>
 
 </div>
 
 </div>
+
+</div>
+
 
 <script>
 
-let fileData = null;
+
+const fileInput =
+    document.getElementById("fileInput");
 
 
-/* =========================================
-   ELEMENT
-========================================= */
-
-function $(id){
-    return document.getElementById(id);
-}
+const base64Input =
+    document.getElementById("base64Input");
 
 
-/* =========================================
-   LOG
-========================================= */
-
-function log(text){
-
-    const time =
-        new Date().toLocaleTimeString();
-
-    $("log").textContent +=
-        "[" + time + "] " +
-        text +
-        "\n";
-}
+const result =
+    document.getElementById("result");
 
 
-/* =========================================
-   BYTES TO HEX
-========================================= */
+const status =
+    document.getElementById("status");
+
+
+
+/* =========================
+   BYTE → HEX
+========================= */
 
 function bytesToHex(bytes){
 
     return Array.from(bytes)
         .map(
-            b =>
-            b.toString(16)
-             .padStart(2,"0")
+            b => b
+                .toString(16)
+                .padStart(2,"0")
         )
         .join("");
+
 }
 
 
-/* =========================================
-   HEX SPACED
-========================================= */
 
-function hexPreview(bytes, max=128){
-
-    const part =
-        bytes.slice(
-            0,
-            Math.min(max,bytes.length)
-        );
-
-    let output = "";
-
-    for(
-        let i=0;
-        i<part.length;
-        i++
-    ){
-
-        if(i % 16 === 0){
-
-            if(i !== 0)
-                output += "\n";
-
-            output +=
-                i.toString(16)
-                 .padStart(4,"0") +
-                "  ";
-        }
-
-        output +=
-            part[i]
-            .toString(16)
-            .padStart(2,"0") +
-            " ";
-    }
-
-    return output;
-}
-
-
-/* =========================================
-   BASE64 DECODE
-========================================= */
+/* =========================
+   BASE64
+========================= */
 
 function decodeBase64(text){
 
-    const clean =
+    text =
         text
         .replace(/\s+/g,"")
         .trim();
 
-    if(!clean){
+
+    if(!text){
 
         throw new Error(
             "Base64 kosong."
         );
+
     }
 
-    /*
-       Validasi karakter Base64
-    */
 
     if(
-        !/^[A-Za-z0-9+/]*={0,2}$/.test(clean)
+        !/^[A-Za-z0-9+/]*={0,2}$/
+        .test(text)
     ){
 
         throw new Error(
             "Karakter Base64 tidak valid."
         );
+
     }
 
-    const binary =
-        atob(clean);
+
+    let binary;
+
+    try{
+
+        binary =
+            atob(text);
+
+    }catch(e){
+
+        throw new Error(
+            "Base64 tidak valid."
+        );
+
+    }
+
 
     const bytes =
         new Uint8Array(
             binary.length
         );
+
 
     for(
         let i=0;
@@ -360,46 +634,48 @@ function decodeBase64(text){
 
         bytes[i] =
             binary.charCodeAt(i);
+
     }
 
-    return {
-        bytes,
-        originalLength:clean.length
-    };
+
+    return bytes;
+
 }
 
 
-/* =========================================
-   READ FILE
-========================================= */
+
+/* =========================
+   BACA INPUT
+========================= */
 
 async function readInput(){
 
-    const file =
-        $("fileInput").files[0];
 
-    const pasted =
-        $("cipherInput")
-        .value
-        .trim();
+    /*
+     * FILE
+     */
 
-    if(file){
+    if(
+        fileInput.files.length
+    ){
 
-        log(
-            "Membaca file: " +
-            file.name
-        );
+        const file =
+            fileInput.files[0];
+
 
         const raw =
             new Uint8Array(
                 await file.arrayBuffer()
             );
 
-        /*
-           Coba deteksi binary Salted__
-        */
 
-        if(raw.length >= 8){
+        /*
+         * Binary OpenSSL
+         */
+
+        if(
+            raw.length >= 8
+        ){
 
             const header =
                 new TextDecoder("ascii")
@@ -407,109 +683,205 @@ async function readInput(){
                     raw.slice(0,8)
                 );
 
-            if(header === "Salted__"){
+
+            if(
+                header === "Salted__"
+            ){
 
                 return {
+
                     bytes:raw,
-                    format:"Binary OpenSSL",
-                    base64Length:0
+
+                    format:
+                        "Binary OpenSSL salted"
+
                 };
+
             }
+
         }
 
+
         /*
-           Kalau file berisi Base64
-        */
+         * Base64 file
+         */
 
         const text =
             new TextDecoder("utf-8")
             .decode(raw)
             .trim();
 
+
         const decoded =
             decodeBase64(text);
 
-        return {
-            bytes:decoded.bytes,
-            format:"Base64 OpenSSL",
-            base64Length:
-                decoded.originalLength
-        };
-    }
-
-    if(pasted){
-
-        const decoded =
-            decodeBase64(pasted);
 
         return {
-            bytes:decoded.bytes,
-            format:"Base64 OpenSSL",
-            base64Length:
-                decoded.originalLength
+
+            bytes:decoded,
+
+            format:
+                "Base64 OpenSSL salted"
+
         };
+
     }
+
+
+    /*
+     * TEXTAREA
+     */
+
+    const text =
+        base64Input.value.trim();
+
+
+    if(text){
+
+        return {
+
+            bytes:
+                decodeBase64(text),
+
+            format:
+                "Base64 OpenSSL salted"
+
+        };
+
+    }
+
 
     throw new Error(
-        "Pilih file atau paste ciphertext."
+        "Pilih file atau masukkan Base64."
     );
+
 }
 
 
-/* =========================================
-   ANALYZE
-========================================= */
+
+/* =========================
+   HEX PREVIEW
+========================= */
+
+function hexPreview(bytes){
+
+    const max =
+        Math.min(
+            bytes.length,
+            160
+        );
+
+
+    let output = "";
+
+
+    for(
+        let i=0;
+        i<max;
+        i+=16
+    ){
+
+        const row =
+            bytes.slice(
+                i,
+                i+16
+            );
+
+
+        const offset =
+            i.toString(16)
+            .padStart(
+                8,
+                "0"
+            );
+
+
+        const hex =
+            Array.from(row)
+            .map(
+                b =>
+                    b.toString(16)
+                    .padStart(2,"0")
+            )
+            .join(" ");
+
+
+        output +=
+            offset +
+            "  " +
+            hex +
+            "\n";
+
+    }
+
+
+    if(
+        bytes.length > max
+    ){
+
+        output +=
+            "\n... preview dibatasi ...";
+
+    }
+
+
+    return output;
+
+}
+
+
+
+/* =========================
+   ANALISIS
+========================= */
 
 async function analyze(){
 
-    $("log").textContent = "";
 
-    $("status").className =
-        "warn";
+    result.classList.remove(
+        "hidden"
+    );
 
-    $("status").textContent =
-        "Menganalisis...";
 
     try{
+
+
+        status.className =
+            "status";
+
+
+        status.innerHTML =
+            "<div class='big'>" +
+            "Menganalisis..." +
+            "</div>" +
+            "Memeriksa format dan kemungkinan konfigurasi.";
+
 
         const input =
             await readInput();
 
+
         const data =
             input.bytes;
 
-        log(
-            "Ukuran binary: " +
-            data.length +
-            " bytes"
-        );
-
-        $("format").textContent =
-            input.format;
-
-        $("base64Size").textContent =
-            input.base64Length
-            ? input.base64Length +
-              " karakter"
-            : "-";
-
-        $("totalSize").textContent =
-            data.length +
-            " bytes";
 
         /*
-           Minimal:
-           Salted__ = 8
-           Salt = 8
-           Ciphertext = sisanya
-        */
+         * Minimal:
+         *
+         * Salted__ = 8 byte
+         * Salt     = 8 byte
+         */
 
-        if(data.length < 16){
+        if(
+            data.length < 16
+        ){
 
             throw new Error(
-                "Data kurang dari 16 bytes."
+                "Data terlalu pendek."
             );
+
         }
+
 
         const header =
             new TextDecoder("ascii")
@@ -517,171 +889,569 @@ async function analyze(){
                 data.slice(0,8)
             );
 
-        $("header").textContent =
-            header;
 
-        if(header !== "Salted__"){
+        if(
+            header !== "Salted__"
+        ){
 
-            $("status").className =
-                "bad";
+            throw new Error(
+                'Header "Salted__" tidak ditemukan.'
+            );
 
-            $("status").textContent =
-                "Header bukan Salted__.";
-
-            $("details").textContent =
-                "Data tidak cocok dengan format OpenSSL salted yang dianalisis program ini.";
-
-            $("hex").textContent =
-                hexPreview(data);
-
-            return;
         }
 
-        log(
-            'Header "Salted__" ditemukan.'
-        );
-
-        /*
-           Salt
-        */
 
         const salt =
-            data.slice(8,16);
+            data.slice(
+                8,
+                16
+            );
+
 
         const ciphertext =
             data.slice(16);
 
-        const saltHex =
+
+        const cipherLength =
+            ciphertext.length;
+
+
+        const remainder =
+            cipherLength % 16;
+
+
+        const blocks =
+            cipherLength / 16;
+
+
+        /*
+         * INFORMASI
+         */
+
+        document.getElementById(
+            "format"
+        ).textContent =
+            input.format;
+
+
+        document.getElementById(
+            "header"
+        ).textContent =
+            header;
+
+
+        document.getElementById(
+            "salt"
+        ).textContent =
             bytesToHex(salt);
 
-        $("salt").textContent =
-            saltHex;
 
-        $("saltSize").textContent =
-            "8 bytes";
-
-        $("cipherSize").textContent =
-            ciphertext.length +
+        document.getElementById(
+            "total"
+        ).textContent =
+            data.length +
             " bytes";
 
+
+        document.getElementById(
+            "ciphertext"
+        ).textContent =
+            cipherLength +
+            " bytes";
+
+
+        document.getElementById(
+            "blocks"
+        ).textContent =
+            remainder === 0
+                ? blocks + " blok"
+                : "Tidak bulat";
+
+
+        document.getElementById(
+            "remainder"
+        ).textContent =
+            remainder +
+            " byte";
+
+
         /*
-           AES CBC ciphertext biasanya
-           memiliki ukuran kelipatan 16.
-        */
+         * STATUS
+         */
 
-        const aligned =
-            ciphertext.length % 16 === 0;
+        if(
+            remainder === 0
+        ){
 
-        $("padding").textContent =
-            aligned
-            ? "Ukuran cocok dengan blok AES (kelipatan 16)"
-            : "Tidak kelipatan 16";
+            status.className =
+                "status success";
 
-        log(
-            "Salt: " +
-            saltHex
-        );
 
-        log(
-            "Ciphertext: " +
-            ciphertext.length +
-            " bytes"
-        );
+            status.innerHTML =
+                "<div class='big'>" +
+                "✓ Struktur valid" +
+                "</div>" +
+
+                "Header Salted__ ditemukan. " +
+
+                "Ciphertext berukuran " +
+                cipherLength +
+                " byte = " +
+                blocks +
+                " blok × 16 byte.";
+
+        }else{
+
+            status.className =
+                "status warning";
+
+
+            status.innerHTML =
+                "<div class='big'>" +
+                "⚠ Struktur blok tidak cocok" +
+                "</div>" +
+
+                "Ciphertext bukan kelipatan 16 byte.";
+
+        }
+
 
         /*
-           Detail
-        */
+         * AES TABLE
+         */
 
-        $("details").innerHTML =
+        const aesTable =
+            document.getElementById(
+                "aesTable"
+            );
 
-            "✓ Format OpenSSL salted terdeteksi.\n\n" +
 
-            "Header:\n" +
-            "Salted__\n\n" +
+        aesTable.innerHTML = "";
 
-            "Salt:\n" +
-            saltHex +
-            "\n\n" +
 
-            "Ciphertext:\n" +
-            ciphertext.length +
-            " bytes\n\n" +
+        const aesConfigs = [
 
-            "Kemungkinan:\n" +
-            "• OpenSSL enc salted format\n" +
-            "• Ciphertext dapat berupa AES atau cipher lain\n" +
-            "• AES-128/AES-256 tidak dapat dibedakan hanya dari header\n" +
-            "• SHA-1/SHA-256 tidak dapat dibedakan dari header\n" +
-            "• KDF tidak dapat dipastikan hanya dari Salted__\n" +
-            "• Password tidak tersimpan di ciphertext";
+            {
+                name:"AES-128-CBC",
+                key:128,
+                block:16
+            },
 
-        $("hex").textContent =
+            {
+                name:"AES-256-CBC",
+                key:256,
+                block:16
+            }
+
+        ];
+
+
+        for(
+            const cfg of aesConfigs
+        ){
+
+            const compatible =
+                remainder === 0;
+
+
+            const tr =
+                document.createElement("tr");
+
+
+            tr.innerHTML = `
+
+                <td>
+                    <strong>
+                    ${cfg.name}
+                    </strong>
+                </td>
+
+                <td>
+                    ${cfg.key} bit
+                </td>
+
+                <td>
+                    ${cfg.block} byte
+                </td>
+
+                <td>
+                    ${compatible
+                        ? "16-byte blocks cocok"
+                        : "Ukuran blok tidak cocok"}
+                </td>
+
+                <td>
+                    <span class="badge ${
+                        compatible
+                        ? "yes"
+                        : ""
+                    }">
+                    ${
+                        compatible
+                        ? "Konsisten"
+                        : "Tidak cocok"
+                    }
+                    </span>
+                </td>
+
+            `;
+
+
+            aesTable.appendChild(tr);
+
+        }
+
+
+        document.getElementById(
+            "aesSummary"
+        ).innerHTML =
+
+            remainder === 0
+
+            ? `
+            <p>
+            <strong>
+            ✓ AES-128-CBC dan AES-256-CBC
+            sama-sama konsisten secara struktur.
+            </strong>
+            </p>
+
+            <p class="note">
+            Panjang ciphertext tidak dapat membedakan
+            key 128-bit dari 256-bit.
+            </p>
+            `
+
+            : `
+            <p>
+            Ciphertext tidak memiliki ukuran yang
+            konsisten dengan blok AES 16 byte.
+            </p>
+            `;
+
+
+        /*
+         * KDF
+         */
+
+        const kdfTable =
+            document.getElementById(
+                "kdfTable"
+            );
+
+
+        kdfTable.innerHTML = "";
+
+
+        const kdfs = [
+
+            {
+                name:"EVP_BytesToKey",
+                description:
+                    "Derivasi key + IV dari password dan salt"
+            },
+
+            {
+                name:"PBKDF2",
+                description:
+                    "Derivasi key menggunakan password, salt, digest, dan iterasi"
+            }
+
+        ];
+
+
+        for(
+            const kdf of kdfs
+        ){
+
+            const tr =
+                document.createElement("tr");
+
+
+            tr.innerHTML = `
+
+                <td>
+                    <strong>
+                    ${kdf.name}
+                    </strong>
+                </td>
+
+                <td>
+                    ✓ Salt tersedia
+                </td>
+
+                <td>
+                    ${kdf.description}
+                </td>
+
+                <td>
+                    <span class="badge unknown">
+                    Tidak dapat dipastikan
+                    </span>
+                </td>
+
+            `;
+
+
+            kdfTable.appendChild(tr);
+
+        }
+
+
+        /*
+         * DIGEST
+         */
+
+        const digestTable =
+            document.getElementById(
+                "digestTable"
+            );
+
+
+        digestTable.innerHTML = "";
+
+
+        const digests = [
+            "SHA-1",
+            "SHA-256"
+        ];
+
+
+        for(
+            const digest of digests
+        ){
+
+            const tr =
+                document.createElement("tr");
+
+
+            tr.innerHTML = `
+
+                <td>
+                    <strong>
+                    ${digest}
+                    </strong>
+                </td>
+
+                <td>
+                    ✓ Masih mungkin
+                </td>
+
+                <td>
+                    <span class="badge unknown">
+                    Tidak dapat dibedakan
+                    </span>
+                </td>
+
+            `;
+
+
+            digestTable.appendChild(tr);
+
+        }
+
+
+        /*
+         * SEMUA KOMBINASI
+         *
+         * 2 AES
+         * 2 KDF
+         * 2 DIGEST
+         *
+         * = 8 kombinasi
+         */
+
+        const combinationTable =
+            document.getElementById(
+                "combinationTable"
+            );
+
+
+        combinationTable.innerHTML = "";
+
+
+        const ciphers = [
+            {
+                name:"AES-128-CBC",
+                key:128
+            },
+            {
+                name:"AES-256-CBC",
+                key:256
+            }
+        ];
+
+
+        const kdfNames = [
+            "EVP_BytesToKey",
+            "PBKDF2"
+        ];
+
+
+        const digestNames = [
+            "SHA-1",
+            "SHA-256"
+        ];
+
+
+        let number = 1;
+
+
+        for(
+            const cipher of ciphers
+        ){
+
+            for(
+                const kdf of kdfNames
+            ){
+
+                for(
+                    const digest of digestNames
+                ){
+
+                    const tr =
+                        document.createElement(
+                            "tr"
+                        );
+
+
+                    tr.innerHTML = `
+
+                        <td>
+                            ${number}
+                        </td>
+
+                        <td>
+                            ${cipher.name}
+                        </td>
+
+                        <td>
+                            ${kdf}
+                        </td>
+
+                        <td>
+                            ${digest}
+                        </td>
+
+                        <td>
+                            ${cipher.key} bit
+                        </td>
+
+                        <td>
+                            128 bit
+                        </td>
+
+                        <td>
+                            <span class="badge yes">
+                            ${
+                                remainder === 0
+                                ? "Konsisten"
+                                : "Tidak cocok"
+                            }
+                            </span>
+                        </td>
+
+                    `;
+
+
+                    combinationTable
+                        .appendChild(tr);
+
+
+                    number++;
+
+                }
+
+            }
+
+        }
+
+
+        /*
+         * KESIMPULAN
+         */
+
+        document.getElementById(
+            "conclusion"
+        ).innerHTML = `
+
+            <p>
+            <strong>
+            Header:
+            </strong>
+            <code>Salted__</code>
+            ditemukan.
+            </p>
+
+            <p>
+            <strong>
+            Salt:
+            </strong>
+            <code>
+            ${bytesToHex(salt)}
+            </code>
+            </p>
+
+            <p>
+            <strong>
+            Ciphertext:
+            </strong>
+            ${cipherLength} byte.
+            </p>
+
+            <p>
+            ${
+                remainder === 0
+                ? "Ciphertext merupakan kelipatan 16 byte, sehingga AES-128-CBC dan AES-256-CBC sama-sama konsisten secara struktur."
+                : "Ciphertext bukan kelipatan 16 byte sehingga tidak cocok dengan struktur blok AES 16 byte."
+            }
+            </p>
+
+            <p>
+            Dari header saja, program tidak dapat
+            menentukan satu konfigurasi asli dari
+            8 kombinasi di atas.
+            </p>
+
+            <p class="note">
+            Untuk membedakan konfigurasi secara nyata,
+            diperlukan informasi tambahan yang dapat
+            memvalidasi hasil dekripsi, misalnya
+            password yang benar, plaintext yang diketahui,
+            atau informasi dari program yang membuat
+            ciphertext.
+            </p>
+
+        `;
+
+
+        /*
+         * HEX
+         */
+
+        document.getElementById(
+            "hex"
+        ).textContent =
             hexPreview(data);
 
-        $("status").className =
-            "good";
-
-        $("status").textContent =
-            "✓ Ciphertext OpenSSL Salted__ berhasil dianalisis.";
-
-        log(
-            "Analisis selesai."
-        );
 
     }catch(error){
 
-        $("status").className =
-            "bad";
 
-        $("status").textContent =
-            "ERROR: " +
+        status.className =
+            "status error";
+
+
+        status.innerHTML =
+            "<div class='big'>" +
+            "✗ Gagal menganalisis" +
+            "</div>" +
             error.message;
 
-        log(
-            "ERROR: " +
-            error.message
-        );
+
     }
+
 }
-
-
-/* =========================================
-   FILE CHANGE
-========================================= */
-
-$("fileInput")
-.addEventListener(
-    "change",
-    function(){
-
-        const file =
-            this.files[0];
-
-        if(file){
-
-            $("cipherInput")
-                .value = "";
-
-            log(
-                "File dipilih: " +
-                file.name
-            );
-        }
-    }
-);
-
-
-/* =========================================
-   INITIAL
-========================================= */
-
-log(
-    "Analyzer siap."
-);
-
-log(
-    "Tidak ada data yang dikirim ke server."
-);
 
 </script>
 
