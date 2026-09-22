@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OpenSSL Ciphertext Analyzer</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#0b1020;
+    color:#eef2ff;
+}
+
+.container{
+    max-width:850px;
+    margin:auto;
+    padding:18px;
+}
+
+.card{
+    background:#151c31;
+    border:1px solid #2b3755;
+    border-radius:16px;
+    padding:18px;
+    margin-bottom:16px;
+}
+
+h1{margin-top:0}
+
+label{
+    display:block;
+    margin:12px 0 6px;
+    color:#aeb9d8;
+}
+
+input,textarea,button{
+    width:100%;
+    border:1px solid #34415f;
+    border-radius:9px;
+    background:#0d1425;
+    color:white;
+    padding:11px;
+    font-size:14px;
+}
+
+textarea{
+    min-height:180px;
+    resize:vertical;
+    font-family:monospace;
+}
+
+button{
+    cursor:pointer;
+    background:#315da8;
+    margin-top:10px;
+}
+
+button:hover{
+    background:#3d6fc4;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+}
+
+@media(max-width:650px){
+    .grid{grid-template-columns:1fr}
+}
+
+.item{
+    background:#0d1425;
+    border:1px solid #293452;
+    border-radius:10px;
+    padding:12px;
+}
+
+.item span{
+    display:block;
+    color:#91a0c2;
+    font-size:12px;
+    margin-bottom:5px;
+}
+
+.item b{
+    word-break:break-all;
+}
+
+.good{color:#62e394}
+.warn{color:#ffd166}
+.bad{color:#ff7777}
+
+pre{
+    white-space:pre-wrap;
+    word-break:break-word;
+    background:#080d19;
+    border-radius:10px;
+    padding:12px;
+    max-height:350px;
+    overflow:auto;
+    font-size:12px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+<h1>🔎 OpenSSL Ciphertext Analyzer</h1>
+<p>
+Analisis format ciphertext secara lokal di browser.
+Tidak ada data yang dikirim ke server.
+</p>
+</div>
+
+<div class="card">
+
+<h2>Input File</h2>
+
+<input
+    type="file"
+    id="fileInput"
+    accept=".txt,.enc,.bin,.dat"
+>
+
+<label>Atau paste ciphertext Base64</label>
+
+<textarea
+    id="cipherInput"
+    placeholder="U2FsdGVkX1..."
+></textarea>
+
+<button onclick="analyze()">
+🔍 Analisis Ciphertext
+</button>
+
+</div>
+
+<div class="card">
+
+<h2>Hasil</h2>
+
+<div id="status" class="warn">
+Belum dianalisis.
+</div>
+
+<br>
+
+<div class="grid">
+
+<div class="item">
+<span>Format</span>
+<b id="format">-</b>
+</div>
+
+<div class="item">
+<span>OpenSSL Header</span>
+<b id="header">-</b>
+</div>
+
+<div class="item">
+<span>Salt</span>
+<b id="salt">-</b>
+</div>
+
+<div class="item">
+<span>Salt Size</span>
+<b id="saltSize">-</b>
+</div>
+
+<div class="item">
+<span>Total Binary</span>
+<b id="totalSize">-</b>
+</div>
+
+<div class="item">
+<span>Ciphertext</span>
+<b id="cipherSize">-</b>
+</div>
+
+<div class="item">
+<span>Base64 Size</span>
+<b id="base64Size">-</b>
+</div>
+
+<div class="item">
+<span>Padding</span>
+<b id="padding">-</b>
+</div>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<h2>Informasi yang Bisa/Tidak Bisa Diketahui</h2>
+
+<pre id="details"></pre>
+
+</div>
+
+<div class="card">
+
+<h2>Hex Preview</h2>
+
+<pre id="hex"></pre>
+
+</div>
+
+<div class="card">
+
+<h2>Log</h2>
+
+<pre id="log"></pre>
+
+</div>
+
+</div>
+
+<script>
+
+let fileData = null;
+
+
+/* =========================================
+   ELEMENT
+========================================= */
+
+function $(id){
+    return document.getElementById(id);
+}
+
+
+/* =========================================
+   LOG
+========================================= */
+
+function log(text){
+
+    const time =
+        new Date().toLocaleTimeString();
+
+    $("log").textContent +=
+        "[" + time + "] " +
+        text +
+        "\n";
+}
+
+
+/* =========================================
+   BYTES TO HEX
+========================================= */
+
+function bytesToHex(bytes){
+
+    return Array.from(bytes)
+        .map(
+            b =>
+            b.toString(16)
+             .padStart(2,"0")
+        )
+        .join("");
+}
+
+
+/* =========================================
+   HEX SPACED
+========================================= */
+
+function hexPreview(bytes, max=128){
+
+    const part =
+        bytes.slice(
+            0,
+            Math.min(max,bytes.length)
+        );
+
+    let output = "";
+
+    for(
+        let i=0;
+        i<part.length;
+        i++
+    ){
+
+        if(i % 16 === 0){
+
+            if(i !== 0)
+                output += "\n";
+
+            output +=
+                i.toString(16)
+                 .padStart(4,"0") +
+                "  ";
+        }
+
+        output +=
+            part[i]
+            .toString(16)
+            .padStart(2,"0") +
+            " ";
+    }
+
+    return output;
+}
+
+
+/* =========================================
+   BASE64 DECODE
+========================================= */
+
+function decodeBase64(text){
+
+    const clean =
+        text
+        .replace(/\s+/g,"")
+        .trim();
+
+    if(!clean){
+
+        throw new Error(
+            "Base64 kosong."
+        );
+    }
+
+    /*
+       Validasi karakter Base64
+    */
+
+    if(
+        !/^[A-Za-z0-9+/]*={0,2}$/.test(clean)
+    ){
+
+        throw new Error(
+            "Karakter Base64 tidak valid."
+        );
+    }
+
+    const binary =
+        atob(clean);
+
+    const bytes =
+        new Uint8Array(
+            binary.length
+        );
+
+    for(
+        let i=0;
+        i<binary.length;
+        i++
+    ){
+
+        bytes[i] =
+            binary.charCodeAt(i);
+    }
+
+    return {
+        bytes,
+        originalLength:clean.length
+    };
+}
+
+
+/* =========================================
+   READ FILE
+========================================= */
+
+async function readInput(){
+
+    const file =
+        $("fileInput").files[0];
+
+    const pasted =
+        $("cipherInput")
+        .value
+        .trim();
+
+    if(file){
+
+        log(
+            "Membaca file: " +
+            file.name
+        );
+
+        const raw =
+            new Uint8Array(
+                await file.arrayBuffer()
+            );
+
+        /*
+           Coba deteksi binary Salted__
+        */
+
+        if(raw.length >= 8){
+
+            const header =
+                new TextDecoder("ascii")
+                .decode(
+                    raw.slice(0,8)
+                );
+
+            if(header === "Salted__"){
+
+                return {
+                    bytes:raw,
+                    format:"Binary OpenSSL",
+                    base64Length:0
+                };
+            }
+        }
+
+        /*
+           Kalau file berisi Base64
+        */
+
+        const text =
+            new TextDecoder("utf-8")
+            .decode(raw)
+            .trim();
+
+        const decoded =
+            decodeBase64(text);
+
+        return {
+            bytes:decoded.bytes,
+            format:"Base64 OpenSSL",
+            base64Length:
+                decoded.originalLength
+        };
+    }
+
+    if(pasted){
+
+        const decoded =
+            decodeBase64(pasted);
+
+        return {
+            bytes:decoded.bytes,
+            format:"Base64 OpenSSL",
+            base64Length:
+                decoded.originalLength
+        };
+    }
+
+    throw new Error(
+        "Pilih file atau paste ciphertext."
+    );
+}
+
+
+/* =========================================
+   ANALYZE
+========================================= */
+
+async function analyze(){
+
+    $("log").textContent = "";
+
+    $("status").className =
+        "warn";
+
+    $("status").textContent =
+        "Menganalisis...";
+
+    try{
+
+        const input =
+            await readInput();
+
+        const data =
+            input.bytes;
+
+        log(
+            "Ukuran binary: " +
+            data.length +
+            " bytes"
+        );
+
+        $("format").textContent =
+            input.format;
+
+        $("base64Size").textContent =
+            input.base64Length
+            ? input.base64Length +
+              " karakter"
+            : "-";
+
+        $("totalSize").textContent =
+            data.length +
+            " bytes";
+
+        /*
+           Minimal:
+           Salted__ = 8
+           Salt = 8
+           Ciphertext = sisanya
+        */
+
+        if(data.length < 16){
+
+            throw new Error(
+                "Data kurang dari 16 bytes."
+            );
+        }
+
+        const header =
+            new TextDecoder("ascii")
+            .decode(
+                data.slice(0,8)
+            );
+
+        $("header").textContent =
+            header;
+
+        if(header !== "Salted__"){
+
+            $("status").className =
+                "bad";
+
+            $("status").textContent =
+                "Header bukan Salted__.";
+
+            $("details").textContent =
+                "Data tidak cocok dengan format OpenSSL salted yang dianalisis program ini.";
+
+            $("hex").textContent =
+                hexPreview(data);
+
+            return;
+        }
+
+        log(
+            'Header "Salted__" ditemukan.'
+        );
+
+        /*
+           Salt
+        */
+
+        const salt =
+            data.slice(8,16);
+
+        const ciphertext =
+            data.slice(16);
+
+        const saltHex =
+            bytesToHex(salt);
+
+        $("salt").textContent =
+            saltHex;
+
+        $("saltSize").textContent =
+            "8 bytes";
+
+        $("cipherSize").textContent =
+            ciphertext.length +
+            " bytes";
+
+        /*
+           AES CBC ciphertext biasanya
+           memiliki ukuran kelipatan 16.
+        */
+
+        const aligned =
+            ciphertext.length % 16 === 0;
+
+        $("padding").textContent =
+            aligned
+            ? "Ukuran cocok dengan blok AES (kelipatan 16)"
+            : "Tidak kelipatan 16";
+
+        log(
+            "Salt: " +
+            saltHex
+        );
+
+        log(
+            "Ciphertext: " +
+            ciphertext.length +
+            " bytes"
+        );
+
+        /*
+           Detail
+        */
+
+        $("details").innerHTML =
+
+            "✓ Format OpenSSL salted terdeteksi.\n\n" +
+
+            "Header:\n" +
+            "Salted__\n\n" +
+
+            "Salt:\n" +
+            saltHex +
+            "\n\n" +
+
+            "Ciphertext:\n" +
+            ciphertext.length +
+            " bytes\n\n" +
+
+            "Kemungkinan:\n" +
+            "• OpenSSL enc salted format\n" +
+            "• Ciphertext dapat berupa AES atau cipher lain\n" +
+            "• AES-128/AES-256 tidak dapat dibedakan hanya dari header\n" +
+            "• SHA-1/SHA-256 tidak dapat dibedakan dari header\n" +
+            "• KDF tidak dapat dipastikan hanya dari Salted__\n" +
+            "• Password tidak tersimpan di ciphertext";
+
+        $("hex").textContent =
+            hexPreview(data);
+
+        $("status").className =
+            "good";
+
+        $("status").textContent =
+            "✓ Ciphertext OpenSSL Salted__ berhasil dianalisis.";
+
+        log(
+            "Analisis selesai."
+        );
+
+    }catch(error){
+
+        $("status").className =
+            "bad";
+
+        $("status").textContent =
+            "ERROR: " +
+            error.message;
+
+        log(
+            "ERROR: " +
+            error.message
+        );
+    }
+}
+
+
+/* =========================================
+   FILE CHANGE
+========================================= */
+
+$("fileInput")
+.addEventListener(
+    "change",
+    function(){
+
+        const file =
+            this.files[0];
+
+        if(file){
+
+            $("cipherInput")
+                .value = "";
+
+            log(
+                "File dipilih: " +
+                file.name
+            );
+        }
+    }
+);
+
+
+/* =========================================
+   INITIAL
+========================================= */
+
+log(
+    "Analyzer siap."
+);
+
+log(
+    "Tidak ada data yang dikirim ke server."
+);
+
+</script>
+
+</body>
+</html>
